@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Great+Vibes&display=swap");
+
+body {
+  background: #f2ede4;
+}
+
+/* Each .flyer-page is sized to match the source template's ~1300x930 canvas
+   so on-screen preview and the Puppeteer PDF export line up exactly. */
+.flyer-page {
+  width: 1300px;
+  height: 930px;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .flyer-page {
+    page-break-after: always;
+  }
+}

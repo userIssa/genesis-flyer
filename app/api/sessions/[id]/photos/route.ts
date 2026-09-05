@@ -17,6 +17,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!session) return NextResponse.json({ error: "Session not found" }, { status: 404 });
 
   const form = await req.formData();
+  const celebrantId = form.get("celebrantId") as string | null;
   const files = form.getAll("files") as File[];
   if (files.length === 0) {
     return NextResponse.json({ error: "No files uploaded" }, { status: 400 });
@@ -25,6 +26,24 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const dir = uploadDir(params.id);
   await mkdir(dir, { recursive: true });
 
+  // Direct upload for an individual celebrant
+  if (celebrantId) {
+    const celebrant = session.celebrants.id(celebrantId);
+    if (!celebrant) return NextResponse.json({ error: "Celebrant not found" }, { status: 404 });
+
+    const file = files[0];
+    const safeName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    const buffer = Buffer.from(await file.arrayBuffer());
+    await writeFile(path.join(dir, safeName), buffer);
+
+    celebrant.photoUrl = `/uploads/${params.id}/${safeName}`;
+    celebrant.photoMatchedBy = "manual";
+    await session.save();
+
+    return NextResponse.json({ session, celebrant });
+  }
+
+  // Bulk upload with auto-matching
   const savedFilenames: string[] = [];
   for (const file of files) {
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -57,10 +76,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   });
 }
 
-// Manual fallback: pair an already-uploaded (unmatched) filename with a celebrant by hand.
+// Manual fallback: pair an already-uploaded (unmatched) filename with a celebrant by hand, or remove a photo.
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   await connectToDatabase();
-  const { celebrantId, filename } = await req.json();
+  const { celebrantId, filename, action } = await req.json();
 
   const session = await FlyerSession.findById(params.id);
   if (!session) return NextResponse.json({ error: "Session not found" }, { status: 404 });
@@ -68,8 +87,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const celebrant = session.celebrants.id(celebrantId);
   if (!celebrant) return NextResponse.json({ error: "Celebrant not found" }, { status: 404 });
 
-  celebrant.photoUrl = `/uploads/${params.id}/${filename}`;
-  celebrant.photoMatchedBy = "manual";
+  if (action === "remove" || (!filename && action !== "keep")) {
+    celebrant.photoUrl = null;
+    celebrant.photoMatchedBy = null;
+  } else {
+    celebrant.photoUrl = `/uploads/${params.id}/${filename}`;
+    celebrant.photoMatchedBy = "manual";
+  }
   await session.save();
 
   return NextResponse.json({ session });

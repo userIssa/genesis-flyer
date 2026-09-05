@@ -6,7 +6,7 @@ export interface Celebrant {
   position: string;
   unit: string; // branch / department, e.g. "QSR, Asaba"
   birthDay: number; // 1-31, drives sort order and the "1st/2nd/3rd" badge
-  photoUrl?: string; // set once a photo is uploaded/matched
+  photoUrl?: string | null; // set once a photo is uploaded/matched
   photoMatchedBy?: "auto" | "manual" | null;
 }
 

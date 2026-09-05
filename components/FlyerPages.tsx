@@ -43,9 +43,11 @@ function CoverPage({ title, monthTag, message }: { title: string; monthTag: stri
 function GridPage({
   celebrants,
   tag,
+  onCelebrantClick,
 }: {
   celebrants: Celebrant[];
   tag: string;
+  onCelebrantClick?: (celebrant: Celebrant) => void;
 }) {
   const rows = chunk(celebrants, 5);
   return (
@@ -56,7 +58,11 @@ function GridPage({
         {rows.map((row, i) => (
           <div key={i} className="flex justify-between">
             {row.map((c) => (
-              <CelebrantCard key={c._id as string} celebrant={c} />
+              <CelebrantCard
+                key={c._id as string}
+                celebrant={c}
+                onPhotoClick={onCelebrantClick}
+              />
             ))}
           </div>
         ))}
@@ -77,11 +83,13 @@ export default function FlyerPages({
   monthTag,
   message,
   celebrants,
+  onCelebrantClick,
 }: {
   title: string;
   monthTag: string;
   message: string;
   celebrants: Celebrant[];
+  onCelebrantClick?: (celebrant: Celebrant) => void;
 }) {
   const sorted = [...celebrants].sort((a, b) => a.birthDay - b.birthDay);
   const pages = chunk(sorted, PER_PAGE);
@@ -90,7 +98,12 @@ export default function FlyerPages({
     <>
       <CoverPage title={title} monthTag={monthTag} message={message} />
       {pages.map((page, i) => (
-        <GridPage key={i} celebrants={page} tag={monthTag} />
+        <GridPage
+          key={i}
+          celebrants={page}
+          tag={monthTag}
+          onCelebrantClick={onCelebrantClick}
+        />
       ))}
     </>
   );

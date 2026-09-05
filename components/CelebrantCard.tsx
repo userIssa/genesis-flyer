@@ -1,9 +1,23 @@
+"use client";
+
 import { ordinal } from "@/lib/ordinal";
 import type { Celebrant } from "@/lib/models";
 
-export default function CelebrantCard({ celebrant }: { celebrant: Celebrant }) {
+export default function CelebrantCard({
+  celebrant,
+  onPhotoClick,
+}: {
+  celebrant: Celebrant;
+  onPhotoClick?: (celebrant: Celebrant) => void;
+}) {
   return (
-    <div className="flex w-[228px] flex-col">
+    <div
+      className={`flex w-[228px] flex-col ${
+        onPhotoClick ? "group cursor-pointer transition-transform hover:scale-[1.02]" : ""
+      }`}
+      onClick={() => onPhotoClick?.(celebrant)}
+      title={onPhotoClick ? `Click to ${celebrant.photoUrl ? "change" : "upload"} photo for ${celebrant.name}` : undefined}
+    >
       <div className="relative h-[190px] w-full overflow-hidden bg-slate-200">
         {celebrant.photoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -17,6 +31,14 @@ export default function CelebrantCard({ celebrant }: { celebrant: Celebrant }) {
             No photo
           </div>
         )}
+
+        {onPhotoClick ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100">
+            <span className="rounded bg-black/60 px-2 py-1">
+              {celebrant.photoUrl ? "Change Photo" : "Upload Photo"}
+            </span>
+          </div>
+        ) : null}
       </div>
 
       <div className="bg-genesis-maroon px-2 py-1.5 text-center text-[15px] font-bold leading-tight text-white">

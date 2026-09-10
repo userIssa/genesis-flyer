@@ -14,6 +14,13 @@ function CoverPage({ title, monthTag, message }: { title: string; monthTag: stri
     <div
       className="flyer-page relative flex flex-col justify-between overflow-hidden bg-[#FAF6F0] px-16 py-12 shadow-xl"
       style={{
+        width: "1300px",
+        height: "930px",
+        minWidth: "1300px",
+        minHeight: "930px",
+        maxWidth: "1300px",
+        maxHeight: "930px",
+        boxSizing: "border-box",
         backgroundImage: "url('/assets/cover_bg.jpg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
@@ -24,6 +31,7 @@ function CoverPage({ title, monthTag, message }: { title: string; monthTag: stri
       <img
         src="/assets/balloon_black_left.png"
         alt="Black Balloon"
+        crossOrigin="anonymous"
         className="pointer-events-none absolute -left-2 -top-2 w-[185px] h-auto object-contain drop-shadow-md z-10"
       />
 
@@ -32,6 +40,7 @@ function CoverPage({ title, monthTag, message }: { title: string; monthTag: stri
       <img
         src="/assets/balloon_gold_right.png"
         alt="Gold Balloon"
+        crossOrigin="anonymous"
         className="pointer-events-none absolute -right-6 -bottom-6 w-[230px] h-auto object-contain z-10"
       />
 
@@ -41,6 +50,7 @@ function CoverPage({ title, monthTag, message }: { title: string; monthTag: stri
         <img
           src="/assets/genesis_logo.png"
           alt="Genesis Group"
+          crossOrigin="anonymous"
           className="h-[84px] w-auto object-contain"
         />
       </div>
@@ -52,6 +62,7 @@ function CoverPage({ title, monthTag, message }: { title: string; monthTag: stri
         <img
           src="/assets/gold_cake.png"
           alt="Birthday Cake"
+          crossOrigin="anonymous"
           className="h-[175px] w-auto object-contain drop-shadow-sm shrink-0"
         />
 
@@ -64,6 +75,7 @@ function CoverPage({ title, monthTag, message }: { title: string; monthTag: stri
           <img
             src="/assets/happy_birthday_gold.png"
             alt="Happy Birthday"
+            crossOrigin="anonymous"
             className="w-[440px] h-auto object-contain"
           />
           <p className="mt-5 max-w-[480px] text-center font-display font-bold text-[14.5px] leading-[1.65] text-slate-900">
@@ -102,6 +114,13 @@ function GridPage({
     <div
       className="flyer-page relative flex flex-col justify-between overflow-hidden bg-[#FAF6F0] px-14 py-8 shadow-xl"
       style={{
+        width: "1300px",
+        height: "930px",
+        minWidth: "1300px",
+        minHeight: "930px",
+        maxWidth: "1300px",
+        maxHeight: "930px",
+        boxSizing: "border-box",
         backgroundImage: "url('/assets/grid_bg.jpg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
@@ -112,6 +131,7 @@ function GridPage({
       <img
         src="/assets/balloon_black_page2.png"
         alt="Black Balloon"
+        crossOrigin="anonymous"
         className="pointer-events-none absolute right-0 top-0 w-[140px] h-auto object-contain drop-shadow z-10"
       />
 
@@ -146,6 +166,7 @@ function GridPage({
         <img
           src="/assets/festive_cake_sketch.png"
           alt="Celebration"
+          crossOrigin="anonymous"
           className="pointer-events-none absolute -left-4 -bottom-3 h-[100px] w-auto object-contain z-10"
         />
 
@@ -158,6 +179,7 @@ function GridPage({
           <img
             src="/assets/genesis_logo.png"
             alt="Genesis Group"
+            crossOrigin="anonymous"
             className="h-[58px] w-auto object-contain"
           />
         </div>

@@ -335,10 +335,18 @@ export default function PreviewPage({ params }: { params: { sessionId: string } 
 
       {/* Hidden 1300px unscaled container used for high-fidelity JPEG / PDF export */}
       <div
+        id="export-container"
         ref={exportContainerRef}
         aria-hidden="true"
-        className="pointer-events-none absolute -left-[99999px] top-0 overflow-hidden"
-        style={{ width: "1300px" }}
+        className="pointer-events-none"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "1300px",
+          zIndex: -9999,
+          opacity: 0,
+        }}
       >
         <FlyerPages
           title={session.title}

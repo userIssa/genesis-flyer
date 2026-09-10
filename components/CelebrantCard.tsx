@@ -90,26 +90,26 @@ export default function CelebrantCard({
         </div>
 
         {/* Right Info Pill with Divider */}
-        <div className="ml-[34px] flex-1 flex flex-col overflow-hidden">
+        <div className="ml-[32px] flex-1 flex flex-col bg-[#9A0000] rounded-br-2xl shadow-sm overflow-hidden h-[46px]">
           {celebrant.position ? (
             <>
               {/* Top Row: Job Role */}
-              <div className="flex h-[21px] items-center justify-end bg-[#9A0000] px-2.5 text-right font-display text-[11px] font-extrabold tracking-tight text-white">
-                <span className="truncate">{celebrant.position}</span>
+              <div className="h-[22px] px-2.5 text-right font-display text-[11px] font-black tracking-tight text-white leading-[22px] truncate">
+                {celebrant.position}
               </div>
 
               {/* White Horizontal Divider */}
-              <div className="h-[2px] w-full bg-white" />
+              <div className="h-[2px] w-full bg-white shrink-0" />
 
               {/* Bottom Row: Work Location */}
-              <div className="flex h-[21px] items-center justify-end rounded-br-2xl bg-[#9A0000] px-2.5 text-right font-display text-[10.5px] font-bold text-white">
-                <span className="truncate">{celebrant.unit}</span>
+              <div className="h-[22px] px-2.5 text-right font-display text-[10px] font-bold text-white leading-[22px] truncate">
+                {celebrant.unit}
               </div>
             </>
           ) : (
             /* Single Row when only Work Location is provided */
-            <div className="flex h-[44px] items-center justify-end rounded-br-2xl bg-[#9A0000] px-2.5 text-right font-display text-[11px] font-bold text-white">
-              <span className="truncate">{celebrant.unit}</span>
+            <div className="h-[46px] px-2.5 text-right font-display text-[11px] font-bold text-white leading-[46px] truncate">
+              {celebrant.unit}
             </div>
           )}
         </div>

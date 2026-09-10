@@ -1,3 +1,4 @@
+import html2canvas from "html2canvas";
 import { toJpeg } from "html-to-image";
 import { jsPDF } from "jspdf";
 import JSZip from "jszip";
@@ -9,7 +10,41 @@ export type ExportProgress = {
 };
 
 /**
+ * Pre-warms and ensures all images and fonts in the DOM node are loaded and decoded.
+ */
+async function waitForAssets(element: HTMLElement): Promise<void> {
+  // Wait for document fonts if supported
+  if (typeof document !== "undefined" && document.fonts) {
+    try {
+      await document.fonts.ready;
+    } catch {
+      // Font loading failure shouldn't block export
+    }
+  }
+
+  // Wait for all <img> tags in the element
+  const imgs = Array.from(element.querySelectorAll("img"));
+  await Promise.all(
+    imgs.map((img) => {
+      if (img.complete && img.naturalWidth !== 0) {
+        return Promise.resolve();
+      }
+      return new Promise<void>((resolve) => {
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+        setTimeout(resolve, 3500); // 3.5s safety timeout
+      });
+    })
+  );
+
+  // Short pause to ensure layout paint has stabilized
+  await new Promise((r) => setTimeout(r, 100));
+}
+
+/**
  * Renders an array of .flyer-page HTML elements to high-resolution JPEG Data URLs.
+ * Uses html2canvas as the primary engine (100% reliable across Safari, Chrome, iOS)
+ * with a fallback to html-to-image if needed.
  */
 export async function renderPagesToJpeg(
   pageElements: HTMLElement[],
@@ -28,17 +63,46 @@ export async function renderPagesToJpeg(
       stage: `Rendering ${pageName} (${i + 1}/${total})…`,
     });
 
-    // Wait slightly to let any pending renders settle
-    await new Promise((r) => setTimeout(r, 50));
+    // Make sure all assets inside this page are loaded
+    await waitForAssets(el);
 
-    const dataUrl = await toJpeg(el, {
-      quality: 0.95,
-      pixelRatio: 1.5, // 1950x1395 crisp resolution
-      width: 1300,
-      height: 930,
-      backgroundColor: "#FAF6F0",
-      cacheBust: false,
-    });
+    let dataUrl: string | null = null;
+
+    // Primary: html2canvas (native 2D canvas drawing, full Safari & WebKit support)
+    try {
+      const canvas = await html2canvas(el, {
+        scale: 1.5, // 1950x1395 crisp resolution
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#FAF6F0",
+        width: 1300,
+        height: 930,
+        windowWidth: 1300,
+        windowHeight: 930,
+        scrollX: 0,
+        scrollY: 0,
+        x: 0,
+        y: 0,
+        logging: false,
+        imageTimeout: 10000,
+      });
+      dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+    } catch (canvasErr) {
+      console.warn("html2canvas render failed, trying html-to-image fallback:", canvasErr);
+    }
+
+    // Fallback: html-to-image
+    if (!dataUrl) {
+      dataUrl = await toJpeg(el, {
+        quality: 0.95,
+        pixelRatio: 1.5,
+        width: 1300,
+        height: 930,
+        backgroundColor: "#FAF6F0",
+        cacheBust: true,
+        skipFonts: true,
+      });
+    }
 
     dataUrls.push(dataUrl);
   }
@@ -148,5 +212,5 @@ export async function downloadFlyerAsJpegZip(
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  URL.revokeObjectURL(url);
 }

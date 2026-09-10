@@ -44,3 +44,28 @@ const FlyerSessionSchema = new Schema<FlyerSessionDoc>(
 export const FlyerSession =
   (models.FlyerSession as mongoose.Model<FlyerSessionDoc>) ||
   model<FlyerSessionDoc>("FlyerSession", FlyerSessionSchema);
+
+export interface PhotoDoc extends mongoose.Document {
+  sessionId: mongoose.Types.ObjectId | string;
+  celebrantId?: mongoose.Types.ObjectId | string | null;
+  filename: string;
+  contentType: string;
+  data: Buffer;
+  createdAt: Date;
+}
+
+const PhotoSchema = new Schema<PhotoDoc>(
+  {
+    sessionId: { type: Schema.Types.ObjectId, ref: "FlyerSession", required: true, index: true },
+    celebrantId: { type: Schema.Types.ObjectId, default: null, index: true },
+    filename: { type: String, required: true },
+    contentType: { type: String, required: true },
+    data: { type: Buffer, required: true },
+  },
+  { timestamps: { createdAt: true, updatedAt: false } }
+);
+
+export const Photo =
+  (models.Photo as mongoose.Model<PhotoDoc>) ||
+  model<PhotoDoc>("Photo", PhotoSchema);
+

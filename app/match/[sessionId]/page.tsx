@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Celebrant } from "@/lib/models";
 import { ordinal } from "@/lib/ordinal";
+import { compressImage } from "@/lib/compressImage";
 
 type SessionData = {
   _id: string;
@@ -26,9 +27,23 @@ export default function MatchPage({ params }: { params: { sessionId: string } })
   const singleFileInputRef = useRef<HTMLInputElement>(null);
 
   async function load() {
-    const res = await fetch(`/api/sessions/${params.sessionId}`);
-    const data = await res.json();
-    setSession(data.session);
+    try {
+      const [sessionRes, photosRes] = await Promise.all([
+        fetch(`/api/sessions/${params.sessionId}`),
+        fetch(`/api/sessions/${params.sessionId}/photos`),
+      ]);
+      const data = await sessionRes.json();
+      setSession(data.session);
+
+      if (photosRes.ok) {
+        const photosData = await photosRes.json();
+        if (photosData.unmatchedFilenames) {
+          setUnmatchedFilenames(photosData.unmatchedFilenames);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load session data:", err);
+    }
   }
 
   useEffect(() => {
@@ -38,42 +53,52 @@ export default function MatchPage({ params }: { params: { sessionId: string } })
   async function handleBulkUpload(files: FileList | null) {
     if (!files || files.length === 0) return;
     setBusy(true);
-    setNote(null);
+    setNote("Optimizing & compressing photos…");
 
-    const form = new FormData();
-    Array.from(files).forEach((f) => form.append("files", f));
+    try {
+      const fileArray = Array.from(files);
+      const optimizedFiles = await Promise.all(fileArray.map((f) => compressImage(f)));
 
-    const res = await fetch(`/api/sessions/${params.sessionId}/photos`, {
-      method: "POST",
-      body: form,
-    });
-    const data = await res.json();
-    setBusy(false);
+      const form = new FormData();
+      optimizedFiles.forEach((f) => form.append("files", f));
 
-    if (!res.ok) {
-      setNote(data.error ?? "Upload failed");
-      return;
+      const res = await fetch(`/api/sessions/${params.sessionId}/photos`, {
+        method: "POST",
+        body: form,
+      });
+      const data = await res.json();
+      setBusy(false);
+
+      if (!res.ok) {
+        setNote(data.error ?? "Upload failed");
+        return;
+      }
+
+      setSession(data.session);
+      setUnmatchedFilenames((prev) => Array.from(new Set([...prev, ...data.unmatchedFilenames])));
+      setNote(
+        `Matched ${data.matchedCount} photo${data.matchedCount === 1 ? "" : "s"} automatically.` +
+          (data.unmatchedFilenames.length
+            ? ` ${data.unmatchedFilenames.length} photo(s) need manual matching below.`
+            : "")
+      );
+    } catch (err) {
+      console.error(err);
+      setBusy(false);
+      setNote("Error uploading photos. Please try again.");
     }
-
-    setSession(data.session);
-    setUnmatchedFilenames((prev) => [...prev, ...data.unmatchedFilenames]);
-    setNote(
-      `Matched ${data.matchedCount} photo${data.matchedCount === 1 ? "" : "s"} automatically.` +
-        (data.unmatchedFilenames.length
-          ? ` ${data.unmatchedFilenames.length} photo(s) need manual matching below.`
-          : "")
-    );
   }
 
   async function handleIndividualUpload(celebrantId: string, file: File) {
     setUploadingCelebrantId(celebrantId);
-    setNote(null);
-
-    const form = new FormData();
-    form.append("celebrantId", celebrantId);
-    form.append("files", file);
+    setNote("Optimizing photo…");
 
     try {
+      const optimized = await compressImage(file);
+      const form = new FormData();
+      form.append("celebrantId", celebrantId);
+      form.append("files", optimized);
+
       const res = await fetch(`/api/sessions/${params.sessionId}/photos`, {
         method: "POST",
         body: form,

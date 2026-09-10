@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import FlyerPages from "@/components/FlyerPages";
 import type { Celebrant } from "@/lib/models";
+import { compressImage } from "@/lib/compressImage";
 
 type SessionData = {
   _id: string;
@@ -29,16 +30,24 @@ export default function PreviewPage({ params }: { params: { sessionId: string } 
 
   async function handleExport() {
     setExporting(true);
-    const res = await fetch(`/api/sessions/${params.sessionId}/export`);
-    if (res.ok) {
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${session?.title ?? "flyer"}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+    try {
+      const res = await fetch(`/api/sessions/${params.sessionId}/export`);
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${session?.title ?? "flyer"}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+        setExporting(false);
+        return;
+      }
+    } catch (err) {
+      console.warn("Server-side PDF generation error, opening print view:", err);
     }
+    // Fallback: in serverless environments without Chromium, open the high-res print view
+    window.open(`/print/${params.sessionId}`, "_blank");
     setExporting(false);
   }
 
@@ -53,13 +62,14 @@ export default function PreviewPage({ params }: { params: { sessionId: string } 
   async function handleFileUpload(file: File) {
     if (!activeCelebrant) return;
     setUploading(true);
-    setStatusMessage(`Uploading photo for ${activeCelebrant.name}…`);
-
-    const form = new FormData();
-    form.append("celebrantId", activeCelebrant._id as string);
-    form.append("files", file);
+    setStatusMessage(`Compressing & uploading photo for ${activeCelebrant.name}…`);
 
     try {
+      const optimizedFile = await compressImage(file);
+      const form = new FormData();
+      form.append("celebrantId", activeCelebrant._id as string);
+      form.append("files", optimizedFile);
+
       const res = await fetch(`/api/sessions/${params.sessionId}/photos`, {
         method: "POST",
         body: form,

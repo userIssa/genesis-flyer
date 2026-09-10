@@ -127,11 +127,14 @@ export default function DashboardPage() {
 
           <label className="grid gap-1 text-sm">
             <span className="font-medium text-slate-700">HRM export (CSV or JSON)</span>
+            <span className="text-xs text-slate-500">
+              Columns recognized: <strong>Name</strong>, <strong>Job Role</strong> (or Role / Position), <strong>Work Location</strong> (or Unit / Branch), and <strong>Birthday</strong>.
+            </span>
             <input
               type="file"
               accept=".csv,.json"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              className="text-sm"
+              className="mt-1 text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
             />
           </label>
 

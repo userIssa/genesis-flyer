@@ -24,6 +24,39 @@ export default function MatchPage({ params }: { params: { sessionId: string } })
   const [searchQuery, setSearchQuery] = useState("");
   const [filterTab, setFilterTab] = useState<"all" | "missing" | "matched">("all");
 
+  const [editingCelebrant, setEditingCelebrant] = useState<Celebrant | null>(null);
+  const [savingCelebrant, setSavingCelebrant] = useState(false);
+
+  async function handleSaveCelebrant(c: Celebrant) {
+    if (!c._id) return;
+    setSavingCelebrant(true);
+    try {
+      const res = await fetch(`/api/sessions/${params.sessionId}/celebrants/${c._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: c.name,
+          position: c.position,
+          unit: c.unit,
+          birthDay: c.birthDay,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSession(data.session);
+        setEditingCelebrant(null);
+        setNote(`Updated details for ${c.name}.`);
+      } else {
+        alert(data.error || "Failed to update celebrant");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error updating celebrant");
+    } finally {
+      setSavingCelebrant(false);
+    }
+  }
+
   const singleFileInputRef = useRef<HTMLInputElement>(null);
 
   async function load() {
@@ -388,13 +421,26 @@ export default function MatchPage({ params }: { params: { sessionId: string } })
                       : "border-slate-200"
                   }`}
                 >
+                  {/* Edit info button (Job Role, Work Location, Name) */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingCelebrant({ ...c });
+                    }}
+                    title="Edit Job Role & Work Location"
+                    className="absolute left-1.5 top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white text-xs font-semibold text-slate-600 shadow border border-slate-200 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-slate-900 hover:text-white"
+                  >
+                    ✎
+                  </button>
+
                   {/* Remove photo button */}
                   {c.photoUrl && !isUploading ? (
                     <button
                       type="button"
                       onClick={(e) => handleRemovePhoto(cid, c.name, e)}
                       title="Remove photo"
-                      className="absolute right-1.5 top-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-600 opacity-0 shadow transition-all group-hover:opacity-100 hover:bg-red-500 hover:text-white"
+                      className="absolute right-1.5 top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white text-xs font-bold text-slate-500 shadow border border-slate-200 opacity-0 transition-all group-hover:opacity-100 hover:bg-red-500 hover:text-white"
                     >
                       ×
                     </button>
@@ -487,15 +533,39 @@ export default function MatchPage({ params }: { params: { sessionId: string } })
                     </div>
                   </div>
 
-                  {/* Name and birth day badge */}
-                  <p className="line-clamp-2 text-xs font-semibold text-slate-800 leading-snug">
+                  {/* Name */}
+                  <p className="line-clamp-1 text-xs font-bold text-slate-900 leading-snug w-full px-1">
                     {c.name}
                   </p>
-                  <p className="mt-0.5 text-[10px] text-slate-400 font-medium">
+
+                  {/* Job Role & Work Location display */}
+                  <div className="mt-1 flex flex-col items-center w-full px-1">
+                    {c.position ? (
+                      <span className="text-[10px] font-bold text-genesis-red truncate max-w-full" title={c.position}>
+                        {c.position}
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingCelebrant({ ...c });
+                        }}
+                        className="text-[9px] text-slate-400 hover:text-genesis-red underline"
+                      >
+                        + Add job role
+                      </button>
+                    )}
+                    {c.unit ? (
+                      <span className="text-[9.5px] font-medium text-slate-500 truncate max-w-full" title={c.unit}>
+                        {c.unit}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {/* Birthday badge */}
+                  <span className="mt-1.5 inline-block rounded bg-slate-100 px-2 py-0.5 text-[9.5px] font-bold text-slate-600 border border-slate-200/60">
                     {ordinal(c.birthDay)}
-                  </p>
-                  <span className="mt-1 text-[9px] text-genesis-red opacity-0 group-hover:opacity-100 transition-opacity font-medium">
-                    Click to {c.photoUrl ? "change" : "upload"}
                   </span>
                 </div>
               );
@@ -503,6 +573,102 @@ export default function MatchPage({ params }: { params: { sessionId: string } })
           </div>
         )}
       </section>
+
+      {/* Edit Celebrant Details Modal */}
+      {editingCelebrant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Edit Celebrant Details</h3>
+                <p className="text-xs text-slate-500">Configure flyer badge role and work location</p>
+              </div>
+              <button
+                onClick={() => setEditingCelebrant(null)}
+                className="h-8 w-8 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 flex items-center justify-center font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                await handleSaveCelebrant(editingCelebrant);
+              }}
+              className="mt-4 grid gap-3.5"
+            >
+              <div>
+                <label className="text-xs font-semibold text-slate-700">Full Name</label>
+                <input
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-genesis-red focus:outline-none focus:ring-1 focus:ring-genesis-red"
+                  value={editingCelebrant.name}
+                  onChange={(e) => setEditingCelebrant({ ...editingCelebrant, name: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700">
+                  Job Role <span className="font-normal text-slate-500">(Top line of red badge)</span>
+                </label>
+                <input
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-genesis-red focus:outline-none focus:ring-1 focus:ring-genesis-red"
+                  placeholder="e.g. Security Supervisor, Cashier, Manager"
+                  value={editingCelebrant.position || ""}
+                  onChange={(e) => setEditingCelebrant({ ...editingCelebrant, position: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700">
+                  Work Location <span className="font-normal text-slate-500">(Bottom line of red badge)</span>
+                </label>
+                <input
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-genesis-red focus:outline-none focus:ring-1 focus:ring-genesis-red"
+                  placeholder="e.g. Hotel, Castle or Ogba Qsr"
+                  value={editingCelebrant.unit || ""}
+                  onChange={(e) => setEditingCelebrant({ ...editingCelebrant, unit: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700">
+                  Birth Day of Month <span className="font-normal text-slate-500">(1 - 31)</span>
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={31}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-genesis-red focus:outline-none focus:ring-1 focus:ring-genesis-red"
+                  value={editingCelebrant.birthDay}
+                  onChange={(e) =>
+                    setEditingCelebrant({ ...editingCelebrant, birthDay: parseInt(e.target.value, 10) || 1 })
+                  }
+                  required
+                />
+              </div>
+
+              <div className="mt-4 flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingCelebrant(null)}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingCelebrant}
+                  className="rounded-lg bg-genesis-red px-5 py-2 text-xs font-semibold text-white hover:opacity-90 shadow disabled:opacity-50"
+                >
+                  {savingCelebrant ? "Saving…" : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

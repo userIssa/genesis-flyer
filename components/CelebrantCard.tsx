@@ -93,21 +93,21 @@ export default function CelebrantCard({
         <div className="ml-[34px] flex-1 flex flex-col overflow-hidden">
           {celebrant.position ? (
             <>
-              {/* Top Row: Position */}
-              <div className="flex h-[21px] items-center justify-end bg-[#9A0000] px-2.5 text-right font-display text-[10.5px] font-extrabold uppercase tracking-tight text-white">
+              {/* Top Row: Job Role */}
+              <div className="flex h-[21px] items-center justify-end bg-[#9A0000] px-2.5 text-right font-display text-[11px] font-extrabold tracking-tight text-white">
                 <span className="truncate">{celebrant.position}</span>
               </div>
 
               {/* White Horizontal Divider */}
               <div className="h-[2px] w-full bg-white" />
 
-              {/* Bottom Row: Unit / Location */}
-              <div className="flex h-[21px] items-center justify-end rounded-br-2xl bg-[#9A0000] px-2.5 text-right font-display text-[10px] font-bold text-white">
+              {/* Bottom Row: Work Location */}
+              <div className="flex h-[21px] items-center justify-end rounded-br-2xl bg-[#9A0000] px-2.5 text-right font-display text-[10.5px] font-bold text-white">
                 <span className="truncate">{celebrant.unit}</span>
               </div>
             </>
           ) : (
-            /* Single Row when only Unit is provided */
+            /* Single Row when only Work Location is provided */
             <div className="flex h-[44px] items-center justify-end rounded-br-2xl bg-[#9A0000] px-2.5 text-right font-display text-[11px] font-bold text-white">
               <span className="truncate">{celebrant.unit}</span>
             </div>

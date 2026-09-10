@@ -40,18 +40,25 @@ export default function PreviewPage({ params }: { params: { sessionId: string } 
       .then((d) => setSession(d.session));
   }, [params.sessionId]);
 
-  // Close dropdown on click outside
+  // Close dropdown on click outside or Escape key
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
         setExportDropdownOpen(false);
       }
     }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setExportDropdownOpen(false);
+      }
+    }
     if (exportDropdownOpen) {
       document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [exportDropdownOpen]);
 

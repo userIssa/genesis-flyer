@@ -85,6 +85,59 @@ export async function renderPagesToJpeg(
         y: 0,
         logging: false,
         imageTimeout: 10000,
+        onclone: (_clonedDoc, clonedEl) => {
+          // html2canvas does not natively implement CSS object-fit: cover, which causes
+          // images inside fixed width/height containers to be stretched/squashed to the box.
+          // We calculate the exact cover geometry and apply it directly to the cloned element.
+          const imgs = clonedEl.querySelectorAll<HTMLImageElement>("img");
+          imgs.forEach((img) => {
+            let nw = img.naturalWidth;
+            let nh = img.naturalHeight;
+            if (!nw || !nh) {
+              const originalImg = el.querySelector<HTMLImageElement>(
+                `img[src="${img.getAttribute("src")}"]`
+              );
+              if (originalImg && originalImg.naturalWidth && originalImg.naturalHeight) {
+                nw = originalImg.naturalWidth;
+                nh = originalImg.naturalHeight;
+              }
+            }
+
+            const parent = img.parentElement;
+            if (parent && nw && nh) {
+              const isCover =
+                img.classList.contains("object-cover") ||
+                window.getComputedStyle(img).objectFit === "cover";
+
+              if (isCover) {
+                const bw = parent.clientWidth || 184;
+                const bh = parent.clientHeight || 208;
+                const imgRatio = nw / nh;
+                const boxRatio = bw / bh;
+
+                img.style.position = "absolute";
+                img.style.maxWidth = "none";
+                img.style.maxHeight = "none";
+
+                if (imgRatio > boxRatio) {
+                  // Image is wider than container (landscape) -> lock height, scale width, center horizontally
+                  const rw = bh * imgRatio;
+                  img.style.height = `${bh}px`;
+                  img.style.width = `${rw}px`;
+                  img.style.top = "0px";
+                  img.style.left = `${(bw - rw) / 2}px`;
+                } else {
+                  // Image is taller than container (portrait) -> lock width, scale height, center vertically
+                  const rh = bw / imgRatio;
+                  img.style.width = `${bw}px`;
+                  img.style.height = `${rh}px`;
+                  img.style.left = "0px";
+                  img.style.top = `${(bh - rh) / 2}px`;
+                }
+              }
+            }
+          });
+        },
       });
       dataUrl = canvas.toDataURL("image/jpeg", 0.95);
     } catch (canvasErr) {

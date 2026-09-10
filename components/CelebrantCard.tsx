@@ -33,6 +33,7 @@ export default function CelebrantCard({
             <img
               src={celebrant.photoUrl}
               alt={celebrant.name}
+              crossOrigin="anonymous"
               className="h-full w-full object-cover"
             />
           ) : (

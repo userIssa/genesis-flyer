@@ -57,6 +57,44 @@ export default function MatchPage({ params }: { params: { sessionId: string } })
     }
   }
 
+  const [showCsvModal, setShowCsvModal] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvMode, setCsvMode] = useState<"update" | "append" | "replace">("update");
+  const [importingCsv, setImportingCsv] = useState(false);
+
+  async function handleImportCsv(e: React.FormEvent) {
+    e.preventDefault();
+    if (!csvFile) return;
+    setImportingCsv(true);
+
+    const form = new FormData();
+    form.append("file", csvFile);
+    form.append("mode", csvMode);
+
+    try {
+      const res = await fetch(`/api/sessions/${params.sessionId}/import`, {
+        method: "POST",
+        body: form,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSession(data.session);
+        setShowCsvModal(false);
+        setCsvFile(null);
+        setNote(
+          `CSV imported! Updated ${data.updatedCount ?? 0} celebrant(s), added ${data.addedCount ?? 0} new.`
+        );
+      } else {
+        alert(data.error || "Failed to import CSV");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error importing CSV");
+    } finally {
+      setImportingCsv(false);
+    }
+  }
+
   const singleFileInputRef = useRef<HTMLInputElement>(null);
 
   async function load() {
@@ -251,12 +289,25 @@ export default function MatchPage({ params }: { params: { sessionId: string } })
             </p>
           </div>
         </div>
-        <a
-          href={`/preview/${session._id}`}
-          className="self-start sm:self-auto rounded-lg bg-genesis-red px-4 py-2 text-sm font-semibold text-white shadow hover:opacity-90 transition-opacity whitespace-nowrap"
-        >
-          Go to preview →
-        </a>
+        <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
+          <button
+            type="button"
+            onClick={() => setShowCsvModal(true)}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 hover:border-slate-400 transition-colors whitespace-nowrap"
+          >
+            <svg className="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>Import / Update CSV</span>
+          </button>
+
+          <a
+            href={`/preview/${session._id}`}
+            className="rounded-lg bg-genesis-red px-4 py-2 text-sm font-semibold text-white shadow hover:opacity-90 transition-opacity whitespace-nowrap"
+          >
+            Go to preview →
+          </a>
+        </div>
       </div>
 
       {/* Bulk Upload Section */}
@@ -663,6 +714,124 @@ export default function MatchPage({ params }: { params: { sessionId: string } })
                   className="rounded-lg bg-genesis-red px-5 py-2 text-xs font-semibold text-white hover:opacity-90 shadow disabled:opacity-50"
                 >
                   {savingCelebrant ? "Saving…" : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Import / Update CSV Modal */}
+      {showCsvModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Import or Update Celebrants via CSV</h3>
+                <p className="text-xs text-slate-500">Sync names, job roles, work locations, and birthdays</p>
+              </div>
+              <button
+                onClick={() => setShowCsvModal(false)}
+                className="h-8 w-8 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 flex items-center justify-center font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleImportCsv} className="mt-4 grid gap-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-700">Select CSV or JSON File</label>
+                <input
+                  type="file"
+                  accept=".csv,.json"
+                  required
+                  onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)}
+                  className="mt-1 block w-full text-xs text-slate-600 file:mr-3 file:rounded file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
+                />
+                <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs">
+                  <span className="text-slate-500 text-[11px]">
+                    Columns: <strong>Name</strong>, <strong>Job Role</strong>, <strong>Work Location</strong>, <strong>Birthday</strong>
+                  </span>
+                  <a
+                    href="/celebrants_template.csv"
+                    download
+                    className="font-semibold text-genesis-red hover:underline flex items-center gap-1 shrink-0 text-[11px]"
+                  >
+                    📥 Download CSV Template
+                  </a>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+                <label className="text-xs font-bold text-slate-800 block mb-2">Select Import Mode</label>
+                <div className="space-y-2.5">
+                  <label className="flex items-start gap-2.5 text-xs text-slate-700 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="csvMode"
+                      value="update"
+                      checked={csvMode === "update"}
+                      onChange={() => setCsvMode("update")}
+                      className="mt-0.5 text-genesis-red focus:ring-genesis-red"
+                    />
+                    <div>
+                      <span className="font-semibold text-slate-900">Update Existing Celebrants (Recommended)</span>
+                      <p className="text-[11px] text-slate-500">
+                        Updates Job Roles and Work Locations for matching names. Existing uploaded photos are preserved!
+                      </p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-2.5 text-xs text-slate-700 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="csvMode"
+                      value="append"
+                      checked={csvMode === "append"}
+                      onChange={() => setCsvMode("append")}
+                      className="mt-0.5 text-genesis-red focus:ring-genesis-red"
+                    />
+                    <div>
+                      <span className="font-semibold text-slate-900">Add As New Celebrants</span>
+                      <p className="text-[11px] text-slate-500">
+                        Appends any new people in this file to the flyer.
+                      </p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-2.5 text-xs text-slate-700 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="csvMode"
+                      value="replace"
+                      checked={csvMode === "replace"}
+                      onChange={() => setCsvMode("replace")}
+                      className="mt-0.5 text-genesis-red focus:ring-genesis-red"
+                    />
+                    <div>
+                      <span className="font-semibold text-slate-900">Replace Entire List</span>
+                      <p className="text-[11px] text-slate-500">
+                        Overwrites current celebrants with this file (keeps photos for matching names).
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCsvModal(false)}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={importingCsv || !csvFile}
+                  className="rounded-lg bg-genesis-red px-5 py-2 text-xs font-semibold text-white hover:opacity-90 shadow disabled:opacity-50"
+                >
+                  {importingCsv ? "Importing…" : "Upload & Apply CSV"}
                 </button>
               </div>
             </form>

@@ -1,6 +1,5 @@
 import type { Celebrant } from "@/lib/models";
 import CelebrantCard from "./CelebrantCard";
-import { BalloonDecoration, CakeDecoration } from "./Decorations";
 
 const PER_PAGE = 10;
 
@@ -12,30 +11,78 @@ function chunk<T>(items: T[], size: number): T[][] {
 
 function CoverPage({ title, monthTag, message }: { title: string; monthTag: string; message: string }) {
   return (
-    <div className="flyer-page relative flex flex-col bg-genesis-cream px-16 py-14">
-      <div className="flex items-center justify-between">
-        <div className="text-lg font-extrabold tracking-wide text-genesis-red">
-          GENESIS <span className="text-slate-900">GROUP</span>
-        </div>
+    <div
+      className="flyer-page relative flex flex-col justify-between overflow-hidden bg-[#FAF6F0] px-16 py-12 shadow-xl"
+      style={{
+        backgroundImage: "url('/assets/cover_bg.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
+      {/* Top Left: Realistic Black Glitter Balloon with trailing ribbon */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/assets/balloon_black_left.png"
+        alt="Black Balloon"
+        className="pointer-events-none absolute -left-2 -top-2 w-[185px] h-auto object-contain drop-shadow-md z-10"
+      />
+
+      {/* Bottom Right: Metallic Gold Glitter Balloon */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/assets/balloon_gold_right.png"
+        alt="Gold Balloon"
+        className="pointer-events-none absolute -right-6 -bottom-6 w-[230px] h-auto object-contain z-10"
+      />
+
+      {/* Top Center: Genesis Group Logo */}
+      <div className="flex w-full justify-center pt-2">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/assets/genesis_logo.png"
+          alt="Genesis Group"
+          className="h-[84px] w-auto object-contain"
+        />
       </div>
 
-      <div className="mt-16 flex flex-1 items-center gap-10">
-        <CakeDecoration className="h-40 w-40 shrink-0" />
-        <div className="h-40 w-px bg-genesis-gold" />
-        <div>
-          <p className="font-script text-sm uppercase tracking-[0.3em] text-genesis-gold">Happy</p>
-          <h1 className="font-script text-7xl leading-none text-genesis-gold">Birthday</h1>
-          <p className="mt-6 max-w-xl text-sm font-semibold leading-relaxed text-slate-800">
+      {/* Center Section: Full Cake Emblem + Vertical Divider + Untruncated Birthday Calligraphy + Message */}
+      <div className="my-auto flex items-center justify-center gap-8 px-8">
+        {/* Full Untruncated Gold Cake Icon */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/assets/gold_cake.png"
+          alt="Birthday Cake"
+          className="h-[175px] w-auto object-contain drop-shadow-sm shrink-0"
+        />
+
+        {/* Thin Gold Vertical Divider */}
+        <div className="h-[185px] w-[2px] bg-[#C59B4E] rounded-full shrink-0" />
+
+        {/* Right Calligraphy & Message Block */}
+        <div className="flex flex-col items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/assets/happy_birthday_gold.png"
+            alt="Happy Birthday"
+            className="w-[440px] h-auto object-contain"
+          />
+          <p className="mt-5 max-w-[480px] text-center font-display font-bold text-[14.5px] leading-[1.65] text-slate-900">
             {message}
           </p>
         </div>
       </div>
 
-      <BalloonDecoration className="absolute right-10 top-10 h-40 w-24" />
-      <h2 className="mt-auto text-4xl font-extrabold uppercase tracking-tight text-slate-900">
-        {title}
-      </h2>
-      {monthTag ? <p className="mt-1 text-xs italic text-slate-400">{monthTag}</p> : null}
+      {/* Bottom Center: Main Title & Tag */}
+      <div className="flex flex-col items-center pb-4">
+        <h2 className="font-display text-[38px] font-black uppercase tracking-[0.03em] text-slate-900 text-center leading-none">
+          {title}
+        </h2>
+        {monthTag ? (
+          <p className="mt-2 font-handwriting text-2xl font-bold text-slate-600 tracking-wide">
+            {monthTag}
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -50,13 +97,37 @@ function GridPage({
   onCelebrantClick?: (celebrant: Celebrant) => void;
 }) {
   const rows = chunk(celebrants, 5);
-  return (
-    <div className="flyer-page relative flex flex-col bg-genesis-cream px-14 py-10">
-      {tag ? <p className="mb-4 text-xs italic text-slate-400">{tag}</p> : null}
 
-      <div className="flex flex-1 flex-col justify-start gap-6">
+  return (
+    <div
+      className="flyer-page relative flex flex-col justify-between overflow-hidden bg-[#FAF6F0] px-14 py-8 shadow-xl"
+      style={{
+        backgroundImage: "url('/assets/grid_bg.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
+      {/* Top Right: Black Glitter Balloon Accent */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/assets/balloon_black_page2.png"
+        alt="Black Balloon"
+        className="pointer-events-none absolute right-0 top-0 w-[140px] h-auto object-contain drop-shadow z-10"
+      />
+
+      {/* Header: Month Tag / Hashtag in stylish handwriting script */}
+      <div className="h-9 flex items-center">
+        {tag ? (
+          <span className="font-handwriting text-3xl font-bold tracking-wide text-slate-800 pl-2">
+            {tag}
+          </span>
+        ) : null}
+      </div>
+
+      {/* Celebrants Grid: 2 rows of 5 cards */}
+      <div className="my-auto flex flex-1 flex-col justify-center gap-7">
         {rows.map((row, i) => (
-          <div key={i} className="flex justify-between">
+          <div key={i} className="flex w-full items-start justify-between">
             {row.map((c) => (
               <CelebrantCard
                 key={c._id as string}
@@ -68,10 +139,27 @@ function GridPage({
         ))}
       </div>
 
-      <div className="mt-auto flex items-center justify-between pt-4">
-        <CakeDecoration className="h-16 w-16" />
-        <div className="text-sm font-extrabold text-genesis-red">
-          GENESIS <span className="text-slate-900">GROUP</span>
+      {/* Footer: Festive Cake Doodle + Green Baseline Accent + Genesis Logo */}
+      <div className="relative mt-auto flex h-20 items-end justify-between pt-2">
+        {/* Festive Cake Doodle */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/assets/festive_cake_sketch.png"
+          alt="Celebration"
+          className="pointer-events-none absolute -left-4 -bottom-3 h-[100px] w-auto object-contain z-10"
+        />
+
+        {/* Green Horizontal Accent Line extending across to the logo */}
+        <div className="absolute left-[72px] right-[275px] bottom-[26px] h-[3px] rounded-full bg-[#1E824C]" />
+
+        {/* Right Genesis Group Logo */}
+        <div className="ml-auto z-10 flex items-center pb-1">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/assets/genesis_logo.png"
+            alt="Genesis Group"
+            className="h-[58px] w-auto object-contain"
+          />
         </div>
       </div>
     </div>

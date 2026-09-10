@@ -98,32 +98,51 @@ export default function PreviewPage({ params }: { params: { sessionId: string } 
         }}
       />
 
-      <div className="no-print sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
-        <div>
-          <h1 className="text-sm font-semibold text-slate-900">{session.title}</h1>
-          <div className="flex items-center gap-2">
-            {missingPhotoCount > 0 ? (
-              <p className="text-xs text-amber-600">
-                {missingPhotoCount} celebrant(s) still missing a photo (click any card to upload)
-              </p>
-            ) : (
-              <p className="text-xs text-emerald-600">All photos matched · click any card to replace</p>
-            )}
-            {statusMessage && (
-              <span className="text-xs font-semibold text-genesis-red animate-pulse">
-                • {statusMessage}
-              </span>
-            )}
+      <div className="no-print sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3 shadow-sm">
+        <div className="flex items-center gap-3.5">
+          <a
+            href="/"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors shadow-sm"
+            title="Return to Home"
+          >
+            <svg className="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            <span>Home</span>
+          </a>
+
+          <div className="h-6 w-px bg-slate-200" />
+
+          <div>
+            <h1 className="text-sm font-bold text-slate-900">{session.title}</h1>
+            <div className="flex items-center gap-2">
+              {missingPhotoCount > 0 ? (
+                <p className="text-xs text-amber-600">
+                  {missingPhotoCount} celebrant(s) still missing a photo (click any card to upload)
+                </p>
+              ) : (
+                <p className="text-xs text-emerald-600">All photos matched · click any card to replace</p>
+              )}
+              {statusMessage && (
+                <span className="text-xs font-semibold text-genesis-red animate-pulse">
+                  • {statusMessage}
+                </span>
+              )}
+            </div>
           </div>
         </div>
-        <div className="flex gap-3">
-          <a href={`/match/${session._id}`} className="rounded border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50">
+
+        <div className="flex items-center gap-3">
+          <a
+            href={`/match/${session._id}`}
+            className="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+          >
             Back to matching
           </a>
           <button
             onClick={handleExport}
             disabled={exporting || uploading}
-            className="rounded bg-genesis-red px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 hover:opacity-90"
+            className="rounded bg-genesis-red px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 hover:opacity-90 shadow-sm"
           >
             {exporting ? "Generating PDF…" : "Export PDF"}
           </button>

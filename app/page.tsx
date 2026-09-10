@@ -13,6 +13,7 @@ type SessionSummary = {
 export default function DashboardPage() {
   const router = useRouter();
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [title, setTitle] = useState("March Birthday Celebrants");
   const [monthTag, setMonthTag] = useState("#MarchBirthdayCelebrants2026");
   const [message, setMessage] = useState(
@@ -28,6 +29,32 @@ export default function DashboardPage() {
       .then((r) => r.json())
       .then((d) => setSessions(d.sessions ?? []));
   }, []);
+
+  async function handleDeleteSession(id: string, sessionTitle: string) {
+    if (
+      !window.confirm(
+        `Delete "${sessionTitle}"?\n\nThis will permanently delete this flyer, its celebrant list, and all uploaded photos.`
+      )
+    ) {
+      return;
+    }
+
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/sessions/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setSessions((prev) => prev.filter((s) => s._id !== id));
+      } else {
+        const d = await res.json();
+        alert(d.error || "Failed to delete flyer session");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred while deleting the flyer session");
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   async function handleImport() {
     if (!file) {
@@ -129,21 +156,68 @@ export default function DashboardPage() {
 
       {sessions.length > 0 ? (
         <section className="mt-10">
-          <h2 className="text-sm font-semibold text-slate-900">Previous flyers</h2>
-          <ul className="mt-3 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-slate-900">Previous flyers</h2>
+            <span className="text-xs text-slate-400">
+              {sessions.length} flyer{sessions.length === 1 ? "" : "s"} saved
+            </span>
+          </div>
+          <ul className="mt-3 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
             {sessions.map((s) => (
-              <li key={s._id} className="flex items-center justify-between px-4 py-3 text-sm">
+              <li key={s._id} className="flex items-center justify-between px-4 py-3 text-sm hover:bg-slate-50 transition-colors">
                 <div>
-                  <p className="font-medium text-slate-800">{s.title}</p>
-                  <p className="text-xs text-slate-400">{new Date(s.createdAt).toLocaleDateString()}</p>
+                  <p className="font-semibold text-slate-800">{s.title}</p>
+                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <span>
+                      {new Date(s.createdAt).toLocaleDateString(undefined, {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                    {s.monthTag ? (
+                      <>
+                        <span>•</span>
+                        <span className="font-medium text-slate-500">{s.monthTag}</span>
+                      </>
+                    ) : null}
+                  </div>
                 </div>
-                <div className="flex gap-3">
-                  <a className="text-genesis-red hover:underline" href={`/match/${s._id}`}>
+                <div className="flex items-center gap-3">
+                  <a
+                    className="rounded border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-100 transition-colors"
+                    href={`/match/${s._id}`}
+                  >
                     Match photos
                   </a>
-                  <a className="text-genesis-red hover:underline" href={`/preview/${s._id}`}>
+                  <a
+                    className="rounded bg-genesis-red/10 px-3 py-1.5 text-xs font-semibold text-genesis-red hover:bg-genesis-red/20 transition-colors"
+                    href={`/preview/${s._id}`}
+                  >
                     Preview
                   </a>
+                  <button
+                    onClick={() => handleDeleteSession(s._id, s.title)}
+                    disabled={deletingId === s._id}
+                    className="flex items-center gap-1 rounded px-2.5 py-1.5 text-xs font-medium text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-40 transition-colors"
+                    title="Delete flyer session"
+                  >
+                    {deletingId === s._id ? (
+                      <span className="text-red-500 font-semibold">Deleting…</span>
+                    ) : (
+                      <>
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                        <span>Delete</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </li>
             ))}

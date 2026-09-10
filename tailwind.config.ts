@@ -10,14 +10,16 @@ const config: Config = {
       colors: {
         genesis: {
           red: "#E01F27",
-          maroon: "#7A0C1E",
+          maroon: "#9A0000",
+          crimson: "#9A0000",
           gold: "#C9A24B",
-          cream: "#FBF6EE",
+          cream: "#FAF6F0",
         },
       },
       fontFamily: {
         display: ["'Poppins'", "sans-serif"],
         script: ["'Great Vibes'", "cursive"],
+        handwriting: ["'Caveat'", "cursive"],
       },
     },
   },

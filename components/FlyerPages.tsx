@@ -172,27 +172,59 @@ export default function FlyerPages({
   message,
   celebrants,
   onCelebrantClick,
+  scale,
 }: {
   title: string;
   monthTag: string;
   message: string;
   celebrants: Celebrant[];
   onCelebrantClick?: (celebrant: Celebrant) => void;
+  scale?: number;
 }) {
   const sorted = [...celebrants].sort((a, b) => a.birthDay - b.birthDay);
   const pages = chunk(sorted, PER_PAGE);
 
+  const wrapPage = (node: React.ReactNode, key: string | number) => {
+    if (!scale || scale === 1) {
+      return <div key={key}>{node}</div>;
+    }
+
+    return (
+      <div
+        key={key}
+        className="flyer-page-frame relative mx-auto mb-8 shadow-2xl rounded-2xl overflow-hidden bg-[#FAF6F0] border border-stone-300/60 transition-all"
+        style={{
+          width: `${Math.round(1300 * scale)}px`,
+          height: `${Math.round(930 * scale)}px`,
+        }}
+      >
+        <div
+          style={{
+            width: "1300px",
+            height: "930px",
+            transform: `scale(${scale})`,
+            transformOrigin: "top left",
+          }}
+        >
+          {node}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <>
-      <CoverPage title={title} monthTag={monthTag} message={message} />
-      {pages.map((page, i) => (
-        <GridPage
-          key={i}
-          celebrants={page}
-          tag={monthTag}
-          onCelebrantClick={onCelebrantClick}
-        />
-      ))}
-    </>
+    <div className="flex flex-col items-center w-full">
+      {wrapPage(<CoverPage title={title} monthTag={monthTag} message={message} />, "cover")}
+      {pages.map((page, i) =>
+        wrapPage(
+          <GridPage
+            celebrants={page}
+            tag={monthTag}
+            onCelebrantClick={onCelebrantClick}
+          />,
+          i
+        )
+      )}
+    </div>
   );
 }

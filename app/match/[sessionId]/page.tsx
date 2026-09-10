@@ -197,11 +197,11 @@ export default function MatchPage({ params }: { params: { sessionId: string } })
         }}
       />
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <a
             href="/"
-            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors shrink-0"
             title="Return to Home"
           >
             <svg className="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -209,10 +209,10 @@ export default function MatchPage({ params }: { params: { sessionId: string } })
             </svg>
             <span>Home</span>
           </a>
-          <div className="h-8 w-px bg-slate-200" />
-          <div>
-            <h1 className="text-xl font-bold text-slate-900">{session.title}</h1>
-            <p className="text-sm text-slate-500">
+          <div className="h-8 w-px bg-slate-200 shrink-0" />
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl font-bold text-slate-900 truncate">{session.title}</h1>
+            <p className="text-xs sm:text-sm text-slate-500 truncate">
               {sorted.length} celebrants · {matchedPhoto.length} photo(s) matched ·{" "}
               {missingPhoto.length} missing
             </p>
@@ -220,7 +220,7 @@ export default function MatchPage({ params }: { params: { sessionId: string } })
         </div>
         <a
           href={`/preview/${session._id}`}
-          className="rounded bg-genesis-red px-4 py-2 text-sm font-semibold text-white shadow hover:opacity-90 transition-opacity"
+          className="self-start sm:self-auto rounded-lg bg-genesis-red px-4 py-2 text-sm font-semibold text-white shadow hover:opacity-90 transition-opacity whitespace-nowrap"
         >
           Go to preview →
         </a>

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import FlyerPages from "@/components/FlyerPages";
 import type { Celebrant } from "@/lib/models";
 import { compressImage } from "@/lib/compressImage";
+import { downloadFlyerAsPdf, downloadFlyerAsJpegZip, type ExportProgress } from "@/lib/exportFlyer";
 
 type SessionData = {
   _id: string;
@@ -15,10 +16,14 @@ type SessionData = {
 
 export default function PreviewPage({ params }: { params: { sessionId: string } }) {
   const [session, setSession] = useState<SessionData | null>(null);
-  const [exporting, setExporting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [activeCelebrant, setActiveCelebrant] = useState<Celebrant | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  // Direct export states
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
+  const exportContainerRef = useRef<HTMLDivElement>(null);
 
   // Responsive scaling & zoom controls
   const [scale, setScale] = useState(0.55);
@@ -44,10 +49,8 @@ export default function PreviewPage({ params }: { params: { sessionId: string } 
 
   useEffect(() => {
     if (zoomMode === "fit") {
-      // Calculate responsive scale based on window width with margin
       const padding = windowWidth < 640 ? 24 : windowWidth < 1024 ? 48 : 80;
       const available = Math.max(260, windowWidth - padding);
-      // Auto-fit scale: minimum 0.20 for small phones, up to 0.85 for large displays
       const computedScale = Math.min(0.85, Math.max(0.2, +(available / 1300).toFixed(3)));
       setScale(computedScale);
     } else {
@@ -73,27 +76,56 @@ export default function PreviewPage({ params }: { params: { sessionId: string } 
     setZoomMode("fit");
   }
 
-  async function handleExport() {
-    setExporting(true);
+  // Direct multi-page PDF download
+  async function handleDownloadPdf() {
+    if (!session || !exportContainerRef.current) return;
+    setIsExporting(true);
+    setExportProgress({ current: 0, total: 1, stage: "Preparing flyer pages for PDF…" });
+
     try {
-      const res = await fetch(`/api/sessions/${params.sessionId}/export`);
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${session?.title ?? "flyer"}.pdf`;
-        a.click();
-        URL.revokeObjectURL(url);
-        setExporting(false);
+      const pageElements = Array.from(
+        exportContainerRef.current.querySelectorAll<HTMLElement>(".flyer-page")
+      );
+      if (pageElements.length === 0) {
+        alert("No flyer pages found to export.");
+        setIsExporting(false);
+        setExportProgress(null);
         return;
       }
+      await downloadFlyerAsPdf(pageElements, session.title, setExportProgress);
     } catch (err) {
-      console.warn("Server-side PDF generation error, opening print view:", err);
+      console.error("Failed to generate PDF:", err);
+      alert("Failed to generate PDF download. Please try again.");
+    } finally {
+      setIsExporting(false);
+      setExportProgress(null);
     }
-    // Fallback: in serverless environments without Chromium, open the high-res print view
-    window.open(`/print/${params.sessionId}`, "_blank");
-    setExporting(false);
+  }
+
+  // Direct JPEG ZIP archive download
+  async function handleDownloadJpegs() {
+    if (!session || !exportContainerRef.current) return;
+    setIsExporting(true);
+    setExportProgress({ current: 0, total: 1, stage: "Preparing flyer pages for JPEG conversion…" });
+
+    try {
+      const pageElements = Array.from(
+        exportContainerRef.current.querySelectorAll<HTMLElement>(".flyer-page")
+      );
+      if (pageElements.length === 0) {
+        alert("No flyer pages found to export.");
+        setIsExporting(false);
+        setExportProgress(null);
+        return;
+      }
+      await downloadFlyerAsJpegZip(pageElements, session.title, setExportProgress);
+    } catch (err) {
+      console.error("Failed to generate JPEG ZIP:", err);
+      alert("Failed to generate JPEG ZIP archive. Please try again.");
+    } finally {
+      setIsExporting(false);
+      setExportProgress(null);
+    }
   }
 
   function handleCelebrantClick(celebrant: Celebrant) {
@@ -153,7 +185,7 @@ export default function PreviewPage({ params }: { params: { sessionId: string } 
         }}
       />
 
-      {/* Sticky Header: responsive on minimized window and mobile */}
+      {/* Sticky Header */}
       <header className="no-print sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur px-3 py-2 sm:px-6 shadow-sm">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           {/* Left section: Home button, session title, photo missing count */}
@@ -192,8 +224,8 @@ export default function PreviewPage({ params }: { params: { sessionId: string } 
             </div>
           </div>
 
-          {/* Right section: Zoom controls and action buttons */}
-          <div className="flex items-center justify-between md:justify-end gap-2 shrink-0 pt-1 md:pt-0 border-t md:border-t-0 border-slate-100">
+          {/* Right section: Zoom controls and Export Action Buttons */}
+          <div className="flex items-center justify-between md:justify-end gap-2 shrink-0 pt-1 md:pt-0 border-t md:border-t-0 border-slate-100 flex-wrap">
             {/* Zoom Controls */}
             <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs text-slate-600 shadow-sm">
               <button
@@ -223,24 +255,71 @@ export default function PreviewPage({ params }: { params: { sessionId: string } 
               </button>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <a
                 href={`/match/${session._id}`}
                 className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm whitespace-nowrap"
               >
                 <span className="hidden sm:inline">Back to </span>Matching
               </a>
+
+              {/* Download JPEGs ZIP button */}
               <button
-                onClick={handleExport}
-                disabled={exporting || uploading}
-                className="rounded-lg bg-genesis-red px-3 sm:px-4 py-1.5 text-xs font-semibold text-white disabled:opacity-50 hover:opacity-90 shadow-sm transition-all whitespace-nowrap"
+                onClick={handleDownloadJpegs}
+                disabled={isExporting || uploading}
+                className="flex items-center gap-1.5 rounded-lg border border-amber-500/50 bg-amber-50/80 px-3 py-1.5 text-xs font-bold text-amber-900 hover:bg-amber-100 shadow-sm transition-all whitespace-nowrap disabled:opacity-50"
+                title="Download all flyer pages as high-resolution JPEGs in a ZIP file"
               >
-                {exporting ? "Generating…" : "Export PDF"}
+                <svg className="h-3.5 w-3.5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>Download JPEGs (.zip)</span>
+              </button>
+
+              {/* Download PDF button */}
+              <button
+                onClick={handleDownloadPdf}
+                disabled={isExporting || uploading}
+                className="flex items-center gap-1.5 rounded-lg bg-genesis-red px-3.5 sm:px-4 py-1.5 text-xs font-bold text-white disabled:opacity-50 hover:opacity-90 shadow transition-all whitespace-nowrap"
+                title="Directly download full multi-page PDF document"
+              >
+                <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Download PDF</span>
               </button>
             </div>
           </div>
         </div>
       </header>
+
+      {/* Export progress modal */}
+      {exportProgress && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl text-center animate-in fade-in zoom-in-95 duration-150">
+            <div className="mx-auto mb-3.5 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-genesis-red">
+              <svg className="h-6 w-6 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+            </div>
+            <h3 className="text-base font-bold text-slate-900">Preparing Your Download</h3>
+            <p className="mt-1 text-xs text-slate-600 font-medium">{exportProgress.stage}</p>
+
+            <div className="mt-4 w-full rounded-full bg-slate-100 h-2 overflow-hidden border border-slate-200">
+              <div
+                className="bg-genesis-red h-full transition-all duration-200"
+                style={{
+                  width: `${exportProgress.total > 0 ? Math.min(100, Math.round((exportProgress.current / exportProgress.total) * 100)) : 10}%`,
+                }}
+              />
+            </div>
+            <p className="mt-3 text-[11px] text-slate-400">
+              Rendering full-resolution pages directly in your browser. Download will begin automatically.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Scaled flyer canvas container */}
       <div className="mx-auto mt-6 px-2 sm:px-4 flex flex-col items-center w-full">
@@ -251,6 +330,22 @@ export default function PreviewPage({ params }: { params: { sessionId: string } 
           celebrants={session.celebrants}
           onCelebrantClick={handleCelebrantClick}
           scale={scale}
+        />
+      </div>
+
+      {/* Hidden 1300px unscaled container used for high-fidelity JPEG / PDF export */}
+      <div
+        ref={exportContainerRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute -left-[99999px] top-0 overflow-hidden"
+        style={{ width: "1300px" }}
+      >
+        <FlyerPages
+          title={session.title}
+          monthTag={session.monthTag}
+          message={session.message}
+          celebrants={session.celebrants}
+          scale={1}
         />
       </div>
     </main>

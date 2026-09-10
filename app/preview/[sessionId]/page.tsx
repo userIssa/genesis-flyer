@@ -23,7 +23,9 @@ export default function PreviewPage({ params }: { params: { sessionId: string } 
   // Direct export states
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
+  const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const exportContainerRef = useRef<HTMLDivElement>(null);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
 
   // Responsive scaling & zoom controls
   const [scale, setScale] = useState(0.55);
@@ -37,6 +39,21 @@ export default function PreviewPage({ params }: { params: { sessionId: string } 
       .then((r) => r.json())
       .then((d) => setSession(d.session));
   }, [params.sessionId]);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setExportDropdownOpen(false);
+      }
+    }
+    if (exportDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [exportDropdownOpen]);
 
   useEffect(() => {
     function updateWidth() {
@@ -263,31 +280,87 @@ export default function PreviewPage({ params }: { params: { sessionId: string } 
                 <span className="hidden sm:inline">Back to </span>Matching
               </a>
 
-              {/* Download JPEGs ZIP button */}
-              <button
-                onClick={handleDownloadJpegs}
-                disabled={isExporting || uploading}
-                className="flex items-center gap-1.5 rounded-lg border border-amber-500/50 bg-amber-50/80 px-3 py-1.5 text-xs font-bold text-amber-900 hover:bg-amber-100 shadow-sm transition-all whitespace-nowrap disabled:opacity-50"
-                title="Download all flyer pages as high-resolution JPEGs in a ZIP file"
-              >
-                <svg className="h-3.5 w-3.5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span>Download JPEGs (.zip)</span>
-              </button>
+              {/* Unified Export Dropdown */}
+              <div className="relative" ref={exportMenuRef}>
+                <button
+                  onClick={() => setExportDropdownOpen((prev) => !prev)}
+                  disabled={isExporting || uploading}
+                  className="flex items-center gap-1.5 sm:gap-2 rounded-lg bg-genesis-red px-3.5 sm:px-4 py-1.5 text-xs font-bold text-white hover:bg-[#c2141c] shadow transition-all whitespace-nowrap disabled:opacity-50"
+                  title="Export Flyer"
+                >
+                  <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  <span>Export</span>
+                  <svg
+                    className={`h-3.5 w-3.5 text-white/80 transition-transform duration-150 ${
+                      exportDropdownOpen ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
 
-              {/* Download PDF button */}
-              <button
-                onClick={handleDownloadPdf}
-                disabled={isExporting || uploading}
-                className="flex items-center gap-1.5 rounded-lg bg-genesis-red px-3.5 sm:px-4 py-1.5 text-xs font-bold text-white disabled:opacity-50 hover:opacity-90 shadow transition-all whitespace-nowrap"
-                title="Directly download full multi-page PDF document"
-              >
-                <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <span>Download PDF</span>
-              </button>
+                {/* Dropdown Menu */}
+                {exportDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-72 rounded-xl bg-white p-1.5 shadow-2xl border border-slate-200 z-50 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Export Format
+                    </div>
+
+                    {/* PDF Document Option */}
+                    <button
+                      onClick={() => {
+                        setExportDropdownOpen(false);
+                        handleDownloadPdf();
+                      }}
+                      className="w-full flex items-start gap-3 rounded-lg p-2.5 text-left hover:bg-red-50/60 transition-colors group"
+                    >
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-100/70 text-genesis-red group-hover:bg-genesis-red group-hover:text-white transition-colors">
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                          <span>PDF Document</span>
+                          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">.pdf</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 leading-tight mt-0.5">
+                          Multi-page landscape document, ideal for viewing & printing
+                        </p>
+                      </div>
+                    </button>
+
+                    {/* JPEG Pages ZIP Option */}
+                    <button
+                      onClick={() => {
+                        setExportDropdownOpen(false);
+                        handleDownloadJpegs();
+                      }}
+                      className="w-full flex items-start gap-3 rounded-lg p-2.5 text-left hover:bg-amber-50/60 transition-colors group mt-0.5"
+                    >
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100/70 text-amber-700 group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                          <span>JPEG Pages</span>
+                          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">.zip</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 leading-tight mt-0.5">
+                          All pages as high-resolution images bundled in a ZIP file
+                        </p>
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
